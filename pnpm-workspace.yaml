@@ -1,0 +1,29 @@
+packages:
+  - "apps/*"
+  # Vendored monorepo packages (TypeScript source, no build step).
+  # ff-firestore/functions is intentionally NOT included (single-star globs
+  # per package below never descend into it).
+  - "vendor/free-field/packages/ff-types"
+  - "vendor/free-field/packages/ff-firestore"
+  - "vendor/free-field/packages/ff-auth"
+  - "vendor/free-field/packages/ff-data"
+  - "vendor/free-field/packages/ff-sync"
+  - "vendor/free-field/packages/ff-tasks"
+  - "vendor/free-field/packages/ff-tasks-react"
+  - "vendor/free-field/packages/ff-telemetry"
+  - "vendor/free-field/packages/ff-tooling"
+  - "vendor/free-field/packages/ff-viewer"
+  - "vendor/free-field/packages/ff-viewer-react"
+
+onlyBuiltDependencies:
+  - esbuild
+
+# Mirror of the monorepo pnpm-workspace.yaml (keep in sync with the pinned
+# submodule commit).
+overrides:
+  "@types/three": "^0.182.0"
+
+# Fragments engine patch lives in the vendored monorepo; the pin
+# (@thatopen/fragments 3.6.0 exact) and the patch must stay in sync.
+patchedDependencies:
+  "@thatopen/fragments@3.6.0": vendor/free-field/patches/@thatopen__fragments@3.6.0.patch

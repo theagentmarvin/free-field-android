@@ -1,0 +1,9 @@
+{
+  "_help": "Your company's settings for the field app. Edit the values on the right, keep the names on the left. Full guide: docs/company/INSTALL.md",
+  "appName": "My Company Field",
+  "applicationId": "com.example.field",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "authLinkDomain": "freefield.example.com",
+  "signingCertSha256": ""
+}

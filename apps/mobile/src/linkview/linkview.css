@@ -1,0 +1,64 @@
+/* Link view: plan and 3D side by side. Light --ff-* tokens only; every target is 44 px or more. */
+.lv-page { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+.lv-bar { display: flex; align-items: center; gap: 8px; padding: 4px 8px; min-height: 52px; background: var(--ff-bg-app); border-bottom: 1px solid var(--line); }
+.lv-back { padding: 0 8px; }
+.lv-levels { display: flex; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; align-items: center; }
+.lv-levels::-webkit-scrollbar { display: none; }
+.lv-levels .chip { flex: none; min-height: var(--touch); }
+.lv-levels .chip.is-nopan { border-style: dashed; color: var(--muted); }
+.lv-plan-select { width: auto; max-width: 220px; }
+.lv-bar-slot { display: inline-flex; gap: 6px; }
+.lv-note { margin: 0; padding: 8px 12px; background: var(--warn-bg); color: var(--text); font-size: .9rem; border-bottom: 1px solid var(--line); }
+.lv-split { position: relative; flex: 1; min-height: 0; display: flex; }
+.lv-split[data-dir="row"] { flex-direction: row; }
+.lv-split[data-dir="column"] { flex-direction: column; }
+.lv-pane { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.lv-plan { flex-grow: 0; flex-shrink: 0; }
+.lv-model { flex: 1 1 0; }
+.lv-divider { flex-grow: 0; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--panel-2); touch-action: none; user-select: none; -webkit-user-select: none; z-index: 5; }
+.lv-split[data-dir="row"] > .lv-divider { cursor: col-resize; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+.lv-split[data-dir="column"] > .lv-divider { cursor: row-resize; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.lv-grip { background: var(--muted); border-radius: 3px; opacity: .6; }
+.lv-split[data-dir="row"] .lv-grip { width: 4px; height: 44px; }
+.lv-split[data-dir="column"] .lv-grip { width: 44px; height: 4px; }
+.lv-divider.is-dragging .lv-grip { background: var(--accent); opacity: 1; }
+.lv-ghost { position: absolute; background: var(--accent); opacity: .7; pointer-events: none; z-index: 6; }
+.lv-ghost[data-dir="row"] { top: 0; bottom: 0; width: 3px; margin-left: 10px; }
+.lv-ghost[data-dir="column"] { left: 0; right: 0; height: 3px; margin-top: 10px; }
+.lv-outside { position: absolute; left: 8px; right: 64px; top: 8px; z-index: 6; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; background: var(--warn-bg); border: 1px solid var(--line); border-radius: 12px; font-size: .9rem; }
+.lv-chiprow { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.lv-pane .center-screen { min-height: 0; flex: 1; }
+
+/* camera marker on the plan */
+.lv-marker-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 3; }
+.lv-marker { position: absolute; left: 0; top: 0; width: 2px; height: 2px; will-change: transform; }
+.lv-wedge { position: absolute; left: -68px; top: -68px; pointer-events: none; overflow: visible; }
+.lv-wedge-fill { fill: color-mix(in srgb, var(--accent) 30%, transparent); stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.lv-dot, .lv-handle { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; padding: 0; border: 0; background: none; pointer-events: auto; touch-action: none; }
+.lv-dot-core { display: block; width: 20px; height: 20px; margin: 12px; border-radius: 50%; background: var(--accent); border: 3px solid var(--ff-bg-app); box-shadow: 0 0 0 1px var(--text), 0 1px 4px rgba(16,24,40,.35); }
+.lv-handle-dot { display: block; width: 22px; height: 22px; margin: 11px; border-radius: 50%; background: var(--ff-bg-app); border: 3px solid var(--accent); box-shadow: 0 1px 4px rgba(16,24,40,.35); }
+
+.lv-picker { max-height: 80vh; display: flex; flex-direction: column; }
+.lv-picker-sub { margin: 0 0 8px; }
+.lv-picker-list { overflow: auto; margin-bottom: 12px; }
+.lv-entry { display: inline-flex; }
+
+/* Overlay mode: the plan drawn over the 3D view (same panes, so the 3D never reloads when the mode changes). */
+.lv-modes { display: inline-flex; gap: 4px; flex: none; }
+.lv-modes .chip { min-height: var(--touch); }
+.lv-split[data-mode="overlay"] { display: block; }
+.lv-split[data-mode="overlay"] > .lv-model { position: absolute; inset: 0; }
+.lv-split[data-mode="overlay"] > .lv-plan { position: absolute; inset: 0; z-index: 4; }
+.lv-split[data-mode="overlay"] > .lv-divider, .lv-split[data-mode="overlay"] > .lv-ghost { display: none; }
+.lv-split[data-mode="overlay"][data-touch="3d"] > .lv-plan, .lv-split[data-mode="overlay"][data-touch="3d"] > .lv-plan * { pointer-events: none; }
+/* The 3D walk layer (z-index 4, later in the DOM) would sit over the plan (also 4) and eat its taps: let touches fall through it
+   to the plan; only the move pad stays live. With "Use 3D" the plan is click-through and the layer works as usual. */
+.lv-split[data-mode="overlay"][data-touch="plan"] .walk-layer { pointer-events: none; }
+.lv-split[data-mode="overlay"][data-touch="plan"] .walk-pad { pointer-events: auto; }
+.lv-split[data-mode="overlay"] .lv-outside { top: 64px; }
+.lv-overlay-ctl { position: absolute; z-index: 9; top: 8px; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 14px; max-width: calc(100% - 16px); padding: 4px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-raised); }
+.lv-opacity { display: flex; align-items: center; gap: 8px; min-height: var(--touch); font-size: .9rem; }
+.lv-opacity input[type="range"] { width: 150px; height: var(--touch); accent-color: var(--accent); touch-action: pan-y; }
+.lv-opacity output { min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
+.lv-touch { display: inline-flex; gap: 4px; }
+.lv-touch .chip { min-height: var(--touch); }

@@ -1,0 +1,32 @@
+export const ROOT: string;
+export const CONFIG_FILE: string;
+export const LOCAL_CONFIG_FILE: string;
+export const FIREBASE_WEB_VARS: string[];
+export const SIGNING_SECRETS: string[];
+export interface CompanyConfig {
+  appName: string;
+  applicationId: string;
+  versionName: string;
+  versionCode: number;
+  authLinkDomain: string;
+  signingCertSha256?: string;
+}
+export function loadCompanyConfig(): CompanyConfig;
+export function normalizeDomain(raw: unknown): string;
+export function effectiveDomain(cfg: Partial<CompanyConfig>, env?: Record<string, string | undefined>): string;
+export function isPlaceholderPackage(v: string): boolean;
+export function isPlaceholderDomain(v: string): boolean;
+export function isPlaceholderName(v: string): boolean;
+export function validateCompanyConfig(cfg: Partial<CompanyConfig>, opts?: { strict?: boolean; env?: Record<string, string | undefined> }): { key: string; message: string }[];
+export function missingFirebaseVars(env?: Record<string, string | undefined>): string[];
+export function validateFirebaseEnv(env?: Record<string, string | undefined>): string[];
+export function missingSigningSecrets(env?: Record<string, string | undefined>): string[];
+export function slug(s: string): string;
+export function assetlinksJson(applicationId: string, fingerprints: string[]): string;
+export function isFingerprint(v: string): boolean;
+export const WEB_ASSETLINKS_PATH: string;
+export function setConfigValue(key: string, value: unknown, file?: string): void;
+export const TOOLCHAIN_DIR: string;
+export function findToolchain(): { javaHome: string | null; androidHome: string | null };
+export function readProperties(file: string): Record<string, string>;
+export const SIGNING_PROPS_FILE: string;

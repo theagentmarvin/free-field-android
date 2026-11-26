@@ -1,0 +1,4 @@
+[submodule "vendor/free-field"]
+	path = vendor/free-field
+	url = https://github.com/theagentmarvin/free-field-app.git
+	branch = main

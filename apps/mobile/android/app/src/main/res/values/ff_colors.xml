@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Light theme colours. Values mirror the web tokens in
+     vendor/free-field/apps/settings/src/styles/tokens.css; src/theme.test.ts fails on drift. -->
+<resources>
+    <color name="ff_bg_app">#ffffff</color>
+    <color name="ff_bg_canvas">#f2f3f4</color>
+    <color name="ff_blue_active">#2563eb</color>
+</resources>

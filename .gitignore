@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.env*
+!.env.example
+android/app/build/
+android/.gradle/
+android/build/
+*.keystore
+.last-task.md
+test-results/
+local.properties
+.cache/
+
+# Company build: signing keys, passwords and generated secrets never go into Git.
+signing/
+*.p12
+*.pfx
+*.jks
+*.keystore
+KEEP-SAFE-*
+company.config.local.json
+release/
+signing.local.properties
+.android-toolchain/
+*.apk
+*.aab

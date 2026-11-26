@@ -1,0 +1,115 @@
+apply plugin: 'com.android.application'
+
+import groovy.json.JsonSlurper
+
+// Company settings: company.config.json at the repo root (+ git-ignored company.config.local.json), the same
+// file the web build and scripts/ci-build-android.sh read. FFM_COMPANY_CONFIG points at another file.
+def repoRoot = rootProject.projectDir.parentFile.parentFile.parentFile
+def company = [:]
+def customConfig = System.getenv("FFM_COMPANY_CONFIG")
+if (customConfig) {
+    company.putAll(new JsonSlurper().parse(new File(customConfig)))
+} else {
+    company.putAll(new JsonSlurper().parse(new File(repoRoot, "company.config.json")))
+    def localConfig = new File(repoRoot, "company.config.local.json")
+    if (localConfig.exists()) company.putAll(new JsonSlurper().parse(localConfig))
+}
+def cleanHost = { String v -> (v ?: "").trim().replaceFirst(/(?i)^https?:\/\//, "").replaceFirst(/\/+$/, "") }
+def linkDomain = cleanHost(System.getenv("VITE_FF_AUTH_LINK_DOMAIN")) ?: cleanHost(company.authLinkDomain as String)
+if (!linkDomain) throw new GradleException("authLinkDomain is empty in company.config.json. Write your company's FreeField website address there.")
+def companyAppId = company.applicationId as String
+def companyAppName = (company.appName as String).replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"')
+
+// Release signing comes from the environment only (scripts/ci-build-android.sh exports it from the GitHub secrets).
+def ksPath = System.getenv("FFM_KEYSTORE_PATH")
+def releaseSigningReady = ksPath && new File(ksPath).exists() && System.getenv("FFM_KEYSTORE_PASSWORD") && System.getenv("FFM_KEY_ALIAS") && System.getenv("FFM_KEY_PASSWORD")
+
+android {
+    // The code package stays fixed; only applicationId (what the tablet sees) comes from the company config.
+    namespace "app.freefield.field"
+    compileSdk rootProject.ext.compileSdkVersion
+    buildFeatures {
+        buildConfig true
+    }
+    defaultConfig {
+        applicationId companyAppId
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode company.versionCode as int
+        versionName company.versionName as String
+        resValue "string", "app_name", companyAppName
+        resValue "string", "title_activity_main", companyAppName
+        // Company website host for email-link App Links (same value the web bundle reads).
+        manifestPlaceholders = [
+            authLinkDomain    : linkDomain,
+            authFirebaseDomain: cleanHost(System.getenv("VITE_FIREBASE_AUTH_DOMAIN")) ?: linkDomain
+        ]
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            // Bundled 3D models are read in full on every open: stored, they skip a deflate pass over tens of MB.
+            noCompress 'frag'
+        }
+    }
+    signingConfigs {
+        if (releaseSigningReady) {
+            release {
+                storeFile new File(ksPath)
+                storeType "pkcs12"
+                storePassword System.getenv("FFM_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("FFM_KEY_ALIAS")
+                keyPassword System.getenv("FFM_KEY_PASSWORD")
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (releaseSigningReady) signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+// A release app is never produced unsigned, debug-signed or with the example ids.
+gradle.taskGraph.whenReady { graph ->
+    def releaseRequested = graph.allTasks.any { it.project == project && it.name =~ /(assemble|bundle|package)Release/ }
+    if (!releaseRequested) return
+    if (!releaseSigningReady) {
+        throw new GradleException("The release app must be signed with your company key, and the key was not found. Run scripts/make-signing-key.mjs once (see docs/company/INSTALL.md), or let scripts/ci-build-android.sh set the signing variables.")
+    }
+    if (companyAppId.startsWith("com.example.")) {
+        throw new GradleException("applicationId in company.config.json is still the example (" + companyAppId + "). Choose your own, for example com.mycompany.field.")
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
